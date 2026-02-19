@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.create_pair_mapping import create_pair_mapping
+from src.pair_mapping import create_pair_mapping
 
 
 def _delta_phi(phi1: float, phi2: float) -> float:
