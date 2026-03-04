@@ -1,0 +1,10 @@
+numpy
+pandas
+uproot
+awkward
+tqdm
+matplotlib
+networkx
+dimod
+dwave-samplers
+scipy
