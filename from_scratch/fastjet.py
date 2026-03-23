@@ -139,6 +139,7 @@ class EventResult:
     hepmc_event_id: int
     n_constituents: int
     jets: List[ClusterNode]
+    jet_constituent_counts: List[int]
     h_fracs: List[Tuple[float, float, float]]
     truth_flavors: List[str]
     btags: List[Tuple[int, int, int]]
@@ -400,6 +401,10 @@ def jet_higgs_percentages(jet: ClusterNode, label_lookup) -> Tuple[float, float,
     )
 
 
+def jet_num_constituents(jet: ClusterNode) -> int:
+    return len(jet.constituents)
+
+
 def hadron_has_flavor(pdg_id: int, flavor: int) -> bool:
     """Return True if PDG ID corresponds to a hadron carrying 'flavor' quark."""
     a = abs(pdg_id)
@@ -496,6 +501,7 @@ def analyze_event(
 
     jets = anti_kt_cluster(particle_nodes, radius)
     jets = [jet for jet in jets if jet.pt() >= pt_min]
+    jet_constituent_counts = [jet_num_constituents(jet) for jet in jets]
     h_fracs = [jet_higgs_percentages(jet, ancestry) for jet in jets]
     truth_flavors = [jet_truth_flavor(jet, flavor_lookup) for jet in jets] if use_truth_btag else []
     btags = [
@@ -508,6 +514,7 @@ def analyze_event(
         hepmc_event_id=event.hepmc_event_id,
         n_constituents=len(event.stable_barcodes),
         jets=jets,
+        jet_constituent_counts=jet_constituent_counts,
         h_fracs=h_fracs,
         truth_flavors=truth_flavors,
         btags=btags,
@@ -668,6 +675,7 @@ def run(args: argparse.Namespace) -> int:
                 "py",
                 "pz",
                 "E",
+                "num_constituents",
                 "H1_percentage",
                 "H2_percentage",
                 "H3_percentage",
@@ -705,6 +713,7 @@ def run(args: argparse.Namespace) -> int:
             for i, (jet, (h1p, h2p, h3p)) in enumerate(zip(result.jets, result.h_fracs), start=1):
                 flavor_txt = ""
                 btag_txt = ""
+                constituent_txt = f" nconst={result.jet_constituent_counts[i - 1]:4d}"
                 if args.truth_btag:
                     flavor = result.truth_flavors[i - 1]
                     btl, btm, btt = result.btags[i - 1]
@@ -714,6 +723,7 @@ def run(args: argparse.Namespace) -> int:
                     f"  jet {i:2d}  pt={jet.pt():10.4f}  eta={jet.eta():8.4f}  "
                     f"phi={jet.phi():8.4f}  m={jet.mass():9.4f}  "
                     f"H1={h1p:6.2f}% H2={h2p:6.2f}% H3={h3p:6.2f}%"
+                    f"{constituent_txt}"
                     f"{flavor_txt}{btag_txt}"
                 )
             return
@@ -738,6 +748,7 @@ def run(args: argparse.Namespace) -> int:
                     f"{jet.py:.10g}",
                     f"{jet.pz:.10g}",
                     f"{jet.e:.10g}",
+                    result.jet_constituent_counts[i - 1],
                     f"{h1p:.6f}",
                     f"{h2p:.6f}",
                     f"{h3p:.6f}",
